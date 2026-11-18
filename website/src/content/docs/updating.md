@@ -31,10 +31,10 @@ Keep only the rollback copy you intend to use if several exist.
 
 ## Version pinning
 
-The installer defaults to `v1.0.1`. Set `OMO_VERSION` to install a different tagged release:
+The installer defaults to `v1.0.2`. Set `OMO_VERSION` to install a different tagged release:
 
 ```sh
-OMO_VERSION=v1.0.1 sh install.sh
+OMO_VERSION=v1.0.2 sh install.sh
 ```
 
 Checksums are verified against the release `SHA256SUMS` asset. A missing or mismatched checksum aborts the installation.

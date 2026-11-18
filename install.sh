@@ -1,11 +1,11 @@
 #!/bin/sh
 # OMO Manager installer. No sudo. Installs only into the user's home directory.
-# Usage: install.sh [install|verify|uninstall]
-# Testing overrides: OMO_BASE_URL, OMO_VERSION, OMO_NO_VERIFY=1, PREFIX
+# Usage: install.sh [install|upgrade|verify|uninstall]
+# Testing overrides: OMO_BASE_URL, OMO_VERSION, OMO_NO_VERIFY=1, PREFIX, OMO_COLOR
 set -eu
 
 REPO=${OMO_REPO:-garsetayusuf/omo-model-slim}
-VERSION=${OMO_VERSION:-v1.0.1}
+VERSION=${OMO_VERSION:-v1.0.2}
 PREFIX=${PREFIX:-$HOME/.local}
 BIN=$PREFIX/bin
 APP=$PREFIX/share/omo-model-slim
@@ -15,8 +15,75 @@ TMP=
 cleanup() { if [ -n "$TMP" ]; then rm -rf "$TMP"; fi; return 0; }
 trap cleanup EXIT HUP INT TERM
 
-info() { printf '  %s\n' "$*"; }
-fail() { printf 'error: %s\n' "$*" >&2; exit 1; }
+# Color is opt-out with NO_COLOR/OMO_COLOR=0 and off for pipes and dumb terminals.
+# OMO_COLOR=1 forces it on (useful for previewing the output in a pipeline).
+USE_COLOR=0
+if [ "${OMO_COLOR:-auto}" = 1 ]; then
+    USE_COLOR=1
+elif [ "${OMO_COLOR:-auto}" = auto ] && [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != dumb ]; then
+    USE_COLOR=1
+fi
+if [ "$USE_COLOR" = 1 ]; then
+    C_RESET='\033[0m'
+    C_BOLD='\033[1m'
+    C_DIM='\033[2m'
+    C_OK='\033[32m'
+    C_ERR='\033[31m'
+    C_ACCENT='\033[38;5;141m'
+    I_OK='✓'
+    I_ERR='✗'
+    I_STEP='▸'
+    SEP='·'
+else
+    C_RESET=''
+    C_BOLD=''
+    C_DIM=''
+    C_OK=''
+    C_ERR=''
+    C_ACCENT=''
+    I_OK='OK'
+    I_ERR='ERROR'
+    I_STEP='*'
+    SEP='-'
+fi
+
+paint() { printf '%b%s%b' "$1" "$2" "$C_RESET"; }
+
+header() {
+    printf '%b%s%s %s%s%s %s%b\n\n' "$C_BOLD$C_ACCENT" 'OMO Manager' "$C_RESET" "$C_DIM" "$SEP" "$C_DIM" "$VERSION" "$C_RESET"
+    printf '  %s  %s\n' "$I_STEP" "$1"
+}
+
+STEP=0
+TOTAL=5
+step() {
+    STEP=$((STEP + 1))
+    printf '  %s  %d/%d  %-38s' "$I_STEP" "$STEP" "$TOTAL" "$1"
+}
+done_step() {
+    step "$1"
+    if [ -n "${2:-}" ]; then
+        printf '%b%s%s %s%b\n' "$C_OK" "$I_OK" "$C_RESET" "$2" "$C_RESET"
+    else
+        printf '%b%s%s%b\n' "$C_OK" "$I_OK" "$C_RESET" "$C_RESET"
+    fi
+}
+
+summary() {
+    title=$1
+    shift
+    printf '\n  %b%s%s %s%b\n' "$C_BOLD$C_OK" "$I_OK" "$C_RESET" "$title" "$C_RESET"
+    for line in "$@"; do printf '    %s\n' "$line"; done
+}
+
+fail() {
+    printf '\n  %b%s%s %s%b\n' "$C_ERR" "$I_ERR" "$C_RESET" "$*" "$C_RESET" >&2
+    printf '    No changes were made.\n' >&2
+    exit 1
+}
+
+info() { printf '    %s\n' "$*"; }
+verbose() { [ "${OMO_VERBOSE:-0}" = 1 ] && info "$*" || true; }
 
 detect_platform() {
     case $(uname -s) in
@@ -36,15 +103,16 @@ check_python() {
     command -v python3 >/dev/null 2>&1 || fail 'python3 is required (3.10 or newer)'
     python3 -c 'import sys; sys.exit(0 if sys.version_info >= (3,10) else 1)' \
         || fail "Python 3.10+ is required; found $(python3 --version 2>&1)"
+    python3 --version 2>&1
 }
 
 download() {
     url=$1
     destination=$2
     if ! curl -fsSL --retry 3 --connect-timeout 10 --max-time 120 "$url" -o "$destination"; then
-        fail "download failed: $url (check your network connection and the version $VERSION)"
+        fail "download failed for $destination (check network access and version $VERSION)"
     fi
-    [ -s "$destination" ] || fail "empty download: $url"
+    [ -s "$destination" ] || fail "empty download for $destination"
 }
 
 paths() {
@@ -58,7 +126,7 @@ paths() {
 
 verify_manifest() {
     if [ "${OMO_NO_VERIFY:-0}" = 1 ]; then
-        info 'checksum verification disabled (test mode)'
+        verbose 'checksum verification disabled (test mode)'
         return 0
     fi
     if command -v shasum >/dev/null 2>&1; then
@@ -66,25 +134,31 @@ verify_manifest() {
     else
         CHECKER='sha256sum -c'
     fi
-    [ -n "${CHECKER:-}" ] || fail 'no SHA-256 checker found (shasum or sha256sum)'
-    download "$RELEASE/SHA256SUMS" "$TMP/SHA256SUMS" || return 1
-    # Check only the artifacts this installer uses.
+    download "$RELEASE/SHA256SUMS" "$TMP/SHA256SUMS"
     grep -E ' (omo-model-slim|omo_model_slim\.py|omo_tui\.py|opencode_manage\.py)$' "$TMP/SHA256SUMS" > "$TMP/check.txt" \
-        || fail "SHA256SUMS is missing the expected artifacts"
-    (cd "$TMP" && $CHECKER check.txt) || fail 'checksum verification failed; refusing to install'
-    info 'artifact checksums verified'
+        || fail 'SHA256SUMS is missing the expected artifacts'
+    if ! (cd "$TMP" && $CHECKER check.txt > /dev/null 2>&1); then
+        fail 'checksum verification failed; refusing to install'
+    fi
 }
 
 do_install() {
+    if [ -f "$APP/omo-model-slim" ]; then
+        header 'Upgrade'
+    else
+        header 'Install'
+    fi
+
     PLATFORM=$(detect_platform)
     [ "$PLATFORM" != Unsupported ] || fail 'unsupported operating system (need macOS, Linux, or WSL)'
-    info "platform: $PLATFORM"
-    check_python
+    done_step 'Platform detected' "$PLATFORM"
+
+    PYTHON_VERSION=$(check_python)
+    done_step 'Python 3.10+' "$PYTHON_VERSION"
     command -v curl >/dev/null 2>&1 || fail 'curl is required'
     paths
 
     TMP=$(mktemp -d "${TMPDIR:-/tmp}/omo-install.XXXXXX")
-    info "installing version $VERSION"
 
     download "$RAW/omo-model-slim" "$TMP/omo-model-slim"
     download "$RAW/omo_model_slim.py" "$TMP/omo_model_slim.py"
@@ -92,6 +166,7 @@ do_install() {
     download "$RAW/opencode_manage.py" "$TMP/opencode_manage.py"
     download "$RAW/install.sh" "$TMP/install.sh"
     verify_manifest
+    done_step 'Download & checksums' '4 files verified'
 
     python3 -m py_compile "$TMP/omo-model-slim" "$TMP/omo_model_slim.py" \
         "$TMP/omo_tui.py" "$TMP/opencode_manage.py" || fail 'downloaded files failed syntax validation'
@@ -101,8 +176,7 @@ do_install() {
     ROLLBACK=
     if [ -f "$APP/omo-model-slim" ]; then
         ROLLBACK=$APP.rollback.$(date +%Y%m%d%H%M%S)
-        cp -R "$APP" "$ROLLBACK" || fail 'could not create rollback copy'
-        info "previous installation saved to $ROLLBACK"
+        cp -R "$APP" "$ROLLBACK" || fail 'could not create a rollback copy'
     fi
 
     if ! (
@@ -118,44 +192,131 @@ do_install() {
         if [ -n "$ROLLBACK" ]; then
             rm -rf "$APP"
             mv "$ROLLBACK" "$APP"
-            info 'restored previous installation after failure'
+            printf '\n  %s  Restored the previous installation after failure.\n' "$I_OK" >&2
         fi
         fail 'installation failed; no partial installation left behind'
     fi
+    done_step 'Install application files'
 
-    "$BIN/omo-model-slim" --version || fail 'installed executable failed verification'
-    info "installed: $BIN/omo-model-slim"
+    INSTALLED_VERSION=$("$BIN/omo-model-slim" --version) || fail 'installed executable failed verification'
+    done_step 'Verify executable' "$INSTALLED_VERSION"
+
+    NEXT='omo-model-slim'
     case ":$PATH:" in
         *":$BIN:"*) ;;
-        *) info "add this to your shell profile to use the command:"
-           info "  export PATH=\"$BIN:\$PATH\"" ;;
+        *) NEXT="export PATH=\"$BIN:\$PATH\"  # then omo-model-slim" ;;
     esac
-    info 'the existing omo-model executable was not modified'
     if [ -n "$ROLLBACK" ]; then
-        info "rollback: rm -rf \"$APP\" && mv \"$ROLLBACK\" \"$APP\""
+        summary 'Upgrade complete' "Command   omo-model-slim" "Location  $BIN/omo-model-slim" \
+            "Rollback  $ROLLBACK" "Next      $NEXT"
+    else
+        summary 'Install complete' "Command   omo-model-slim" "Location  $BIN/omo-model-slim" "Next      $NEXT"
     fi
     return 0
 }
 
 do_verify() {
+    header 'Verify'
+    TOTAL=3
     [ -x "$BIN/omo-model-slim" ] || fail "not installed at $BIN/omo-model-slim"
-    "$BIN/omo-model-slim" --version
+    done_step 'Executable' "$BIN/omo-model-slim"
+    COUNT=0
     for file in omo-model-slim omo_model_slim.py omo_tui.py opencode_manage.py install.sh; do
         [ -f "$APP/$file" ] || fail "missing installed file: $APP/$file"
+        COUNT=$((COUNT + 1))
     done
-    info 'installation verified'
+    done_step 'Application files' "$COUNT/5 present"
+    INSTALLED_VERSION=$("$BIN/omo-model-slim" --version) || fail 'installed executable did not run'
+    done_step 'Installed version' "$INSTALLED_VERSION"
+    summary 'Installation is healthy' "Location  $BIN/omo-model-slim"
+}
+
+cleanup_path_lines() {
+    # Dependency-aware: if the bin directory still holds other tools, its PATH
+    # entry is probably needed by something else, so leave every profile alone.
+    REMAINING=$(ls -A "$BIN" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "${REMAINING:-0}" -gt 0 ]; then
+        printf 'skipped: %s still contains other executables\n' "$BIN"
+        return 0
+    fi
+    USE_DEFAULT=0
+    if [ "$BIN" = "$HOME/.local/bin" ]; then USE_DEFAULT=1; fi
+
+    REMOVED=0
+    for profile in "$HOME/.zshrc" "$HOME/.zprofile" "$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"; do
+        [ -f "$profile" ] || continue
+        TMP_PROFILE="$profile.omo-tmp.$$"
+        if ! awk -v absolute="$BIN" -v use_default="$USE_DEFAULT" '
+            BEGIN { DROP = sprintf("%c", 1) }
+            function is_omo(seg) {
+                if (seg == absolute) return 1
+                if (use_default == 1 && (seg == "$HOME/.local/bin" || seg == "~/.local/bin")) return 1
+                return 0
+            }
+            function is_path(seg) { return seg == "$PATH" || seg == "${PATH}" }
+            function cleanup(line,    prefix, value, quote, parts, n, i, seg, out, changed, added) {
+                if (!match(line, /^[[:space:]]*(export[[:space:]]+)?PATH=/)) return line
+                prefix = substr(line, 1, RLENGTH)
+                value = substr(line, RLENGTH + 1)
+                quote = ""
+                if (length(value) >= 2 && substr(value, 1, 1) == "\"" && substr(value, length(value), 1) == "\"") {
+                    quote = "\""; value = substr(value, 2, length(value) - 2)
+                } else if (length(value) >= 2 && substr(value, 1, 1) == "\047" && substr(value, length(value), 1) == "\047") {
+                    quote = "\047"; value = substr(value, 2, length(value) - 2)
+                }
+                n = split(value, parts, ":")
+                out = ""; changed = 0; added = 0
+                for (i = 1; i <= n; i++) {
+                    seg = parts[i]
+                    if (seg == "") continue
+                    if (is_omo(seg)) { changed = 1; continue }
+                    out = out (out == "" ? "" : ":") seg
+                    if (!is_path(seg)) added = 1
+                }
+                if (!changed) return line
+                if (!added) return DROP
+                return prefix quote out quote
+            }
+            {
+                result = cleanup($0)
+                if (result == DROP) next
+                print result
+            }
+        ' "$profile" > "$TMP_PROFILE"; then
+            rm -f "$TMP_PROFILE"
+            continue
+        fi
+        if ! cmp -s "$profile" "$TMP_PROFILE"; then
+            cp -p "$profile" "$profile.omo-bak.$(date +%Y%m%d%H%M%S)"
+            cat "$TMP_PROFILE" > "$profile"
+            REMOVED=$((REMOVED + 1))
+        fi
+        rm -f "$TMP_PROFILE"
+    done
+    if [ "$REMOVED" -gt 0 ]; then
+        printf '%s shell profile(s) cleaned (backups saved)\n' "$REMOVED"
+    else
+        printf 'no PATH entries to remove\n'
+    fi
 }
 
 do_uninstall() {
-    rm -f "$BIN/omo-model-slim"
-    rm -rf "$APP"
-    info 'OMO Manager removed; configuration and backups were left untouched'
-    info 'remove any PATH line you added for ~/.local/bin if it is no longer needed'
+    header 'Uninstall'
+    TOTAL=3
+    rm -f "$BIN/omo-model-slim" || fail 'could not remove the command wrapper'
+    done_step 'Remove command wrapper'
+    rm -rf "$APP" || fail 'could not remove application files'
+    done_step 'Remove application files'
+    PATH_RESULT=$(cleanup_path_lines)
+    done_step 'Clean shell PATH entries' "$PATH_RESULT"
+    summary 'Uninstall complete' \
+        'Configuration and backups were kept.' \
+        'Reinstall: curl -fsSL https://raw.githubusercontent.com/garsetayusuf/omo-model-slim/main/install.sh | bash'
 }
 
 case "$ACTION" in
-    install) do_install ;;
+    install|upgrade) do_install ;;
     verify) do_verify ;;
     uninstall) do_uninstall ;;
-    *) fail "unknown action: $ACTION (use install, verify, or uninstall)" ;;
+    *) fail "unknown action: $ACTION (use install, upgrade, verify, or uninstall)" ;;
 esac

@@ -38,8 +38,9 @@ def lifecycle(action: str) -> int:
             temporary.cleanup()
             raise RuntimeError(f'Cannot download the installer: {exc}') from exc
     try:
-        print(f'Running installer action: {action}')
-        return subprocess.run(['sh', str(path), action], check=False).returncode
+        environment = dict(os.environ)
+        environment['OMO_CLI_ACTION'] = action
+        return subprocess.run(['sh', str(path), action], check=False, env=environment).returncode
     finally:
         if temporary:
             temporary.cleanup()

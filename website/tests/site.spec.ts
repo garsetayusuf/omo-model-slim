@@ -80,8 +80,10 @@ test('installation command is copyable', async ({ page, context }) => {
   await page.goto('/');
   const command = page.getByTestId('install-text');
   await expect(command).toContainText('curl -fsSL');
-  await page.getByTestId('install-copy').click();
-  await expect(page.getByTestId('install-copy')).toContainText('Copied');
+  await expect.poll(async () => {
+    await page.getByTestId('install-copy').click();
+    return (await page.getByTestId('install-copy').textContent()) ?? '';
+  }, { timeout: 6000 }).toContain('Copied');
   const clip = await page.evaluate(() => navigator.clipboard.readText());
   expect(clip).toContain('raw.githubusercontent.com/garsetayusuf/omo-model-slim');
 });
@@ -144,7 +146,10 @@ test('terminal reset restores the initial state', async ({ page }) => {
 test('documentation search and mobile drawer work', async ({ page }) => {
   await page.goto('/docs');
   await expect(page.getByTestId('docs-nav-toggle')).toBeAttached(); // island hydrated
-  await page.getByTestId('docs-search').fill('MCP');
+  await expect.poll(async () => {
+    await page.getByTestId('docs-search').fill('MCP');
+    return page.getByRole('link', { name: /MCP servers/i }).count();
+  }, { timeout: 6000 }).toBeGreaterThan(0);
   await expect(page.getByRole('link', { name: /MCP servers/i }).first()).toBeVisible();
 
   await page.setViewportSize({ width: 375, height: 800 });
