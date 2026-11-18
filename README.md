@@ -1,6 +1,6 @@
 # OMO Manager
 
-A lightweight, dependency-free terminal app for managing [OpenCode](https://opencode.ai) and [Oh My OpenCode Slim](https://github.com/alvinunreal/oh-my-opencode-slim) configuration — plus a modern Astro documentation site with a browser-only terminal playground.
+A lightweight, dependency-free Python terminal app for managing [OpenCode](https://opencode.ai) and [Oh My OpenCode Slim](https://github.com/alvinunreal/oh-my-opencode-slim) configuration, plus a static documentation site with a browser-only terminal playground.
 
 - CLI executable: `omo-model-slim`
 - Version: **v1.0.1**
@@ -8,17 +8,21 @@ A lightweight, dependency-free terminal app for managing [OpenCode](https://open
 - Website: https://omo-manager.seri.my.id
 - License: MIT
 
-## Features
+## What it actually does
 
-- Keyboard-driven menu: arrow keys, Enter, Esc, searchable model lists, no numeric shortcuts
-- Schema-aware Slim editing: direct preset agents, nested `agents`, `extends` inheritance, root `agents` overrides, `inheritModelFrom`
-- Model strings, ordered fallback chains (strings and `{ id, variant }` objects), variants, and legacy fallback fields
-- OpenCode provider, custom model, MCP server (local/remote, enable/disable), and default-model management
-- JSONC parsing with comments and trailing commas; positional edits preserve formatting and unrelated keys
-- Automatic timestamped backups, atomic writes, pre/post-write verification, dry-run previews, and restore
-- Verification against `opencode models`, doctor checks, and a full model catalog refresh
-- Version-pinned installer with SHA-256 verification, rollback, and no `sudo`
-- Website with persistent dark/light theme, single-open FAQ, and a column-aware terminal simulator that fits 320px screens
+- Full-screen keyboard UI: arrow keys navigate, Enter selects, Esc returns, and model/preset lists are searchable. The full-screen UI has no numeric shortcuts and no "press Enter to continue" screens. A simple line-based fallback is used only in non-TTY sessions.
+- Reads and edits Slim configuration with JSONC support (comments and trailing commas). Edits are positional, so formatting, comments, and unrelated keys survive.
+- Handles direct preset agents, nested `preset.agents` maps, multiple presets, single-parent `extends` chains, root-level `agents` overrides, and resolves/preserves agent-level `inheritModelFrom`.
+- Handles model strings, ordered fallback chains (including `{ id, variant }` entries), `variant`, `fallback_models`, and `fallbackModels`. Changing a primary model leaves fallback entries intact.
+- Manages OpenCode providers, custom models, local and remote MCP servers (including enable/disable), and the default model via `opencode.json` / `.jsonc`.
+- Creates a timestamped backup before every write, validates before and after replacement, writes atomically, follows symlinks to their targets, and rolls back on verification failure.
+- Offers `verify` against `opencode models`, `doctor` diagnostics, a catalog refresh, dry-run previews for `set`/`edit`, and restore.
+
+## Requirements
+
+- Python **3.10+** and `curl` for the installer
+- `opencode` on PATH for model discovery, model changes, `verify`, and `doctor`. Without it, `config-path`, `current`, and `effective` still work, but selecting models from the registry is unavailable.
+- macOS, Linux, or WSL 2. WSL 1 is best-effort.
 
 ## Install
 
@@ -26,103 +30,121 @@ A lightweight, dependency-free terminal app for managing [OpenCode](https://open
 curl -fsSL https://raw.githubusercontent.com/garsetayusuf/omo-model-slim/main/install.sh | bash
 ```
 
-Requires Python 3.10+ and curl. Installs to `~/.local/bin/omo-model-slim` and `~/.local/share/omo-model-slim/`. The existing `omo-model` executable is never modified, and no user configuration is written during installation.
+No sudo. The installer downloads the pinned `v1.0.1` artifacts, verifies their SHA-256 checksums, validates Python syntax, and installs into your home directory.
 
-If the command is not found, add `~/.local/bin` to your PATH:
+If `omo-model-slim` is not found afterwards, add `~/.local/bin` to your PATH:
 
 ```sh
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc   # or ~/.bashrc
 ```
 
-### Verify, upgrade, uninstall, rollback
+### Upgrade, verify, uninstall, rollback
 
 ```sh
-omo-model-slim upgrade
-omo-model-slim uninstall
+omo-model-slim upgrade          # aliases: update, install
+omo-model-slim uninstall        # removes the CLI, keeps configuration
 sh ~/.local/share/omo-model-slim/install.sh verify
 ```
 
-Upgrades keep the previous application directory at `~/.local/share/omo-model-slim.rollback.<timestamp>`:
+Upgrades save the previous application directory as `~/.local/share/omo-model-slim.rollback.<timestamp>`. To roll back, use the exact path printed by the installer:
 
 ```sh
 rm -rf ~/.local/share/omo-model-slim
-mv ~/.local/share/omo-model-slim.rollback.* ~/.local/share/omo-model-slim
+mv ~/.local/share/omo-model-slim.rollback.<timestamp> ~/.local/share/omo-model-slim
 ```
 
-Full instructions: [website/src/content/docs/installation.md](website/src/content/docs/installation.md).
+More detail: [website/src/content/docs/installation.md](website/src/content/docs/installation.md).
 
-## CLI usage
+## CLI reference
 
-```sh
-omo-model-slim                       # interactive menu
-omo-model-slim --version
-omo-model-slim effective             # resolved models after inheritance
-omo-model-slim current               # configured fields and their exact paths
-omo-model-slim set openai/gpt-6.1-sol --all --dry-run
-omo-model-slim edit variant presets.openai.oracle.variant high
-omo-model-slim verify
-omo-model-slim doctor --full
-omo-model-slim upgrade               # re-run the verified installer
-omo-model-slim uninstall             # remove the CLI, keep your configuration
-```
+| Command | Purpose |
+| --- | --- |
+| `omo-model-slim` | Full-screen interactive menu |
+| `--version` | Print the CLI version |
+| `set MODEL [--all \| --agent NAME \| --category NAME] [--dry-run] [-y]` | Set primary models; fallback chains are preserved |
+| `edit variant\|fallback TARGET VALUE [--dry-run] [-y]` | Change an existing variant/fallback field; `TARGET` is the dot-separated path shown by `current` |
+| `list` / `free` / `search KEYWORD` | Browse the OpenCode model catalog |
+| `providers` / `auth` | List authenticated providers |
+| `current` | Show every configured model, variant, and fallback with its exact path |
+| `effective [--preset NAME]` | Show resolved models after preset inheritance and root overrides |
+| `verify` | Check configured model IDs against `opencode models` |
+| `doctor [--full]` | Run diagnostics; `--full` also calls the official Slim doctor via `bunx` |
+| `backups` / `restore [-y]` | List backups / restore the most recent one |
+| `config-path` / `opencode-current` | Print the active Slim config path / OpenCode config |
+| `upgrade` (`update`, `install`) | Re-run the verified installer |
+| `uninstall` | Remove the CLI |
 
-Configuration files:
+Environment overrides: `OMO_SLIM_CONFIG`, `OMO_OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`; `OMO_BASIC_UI=1` forces the line-based fallback; `OMO_NO_CLEAR=1` disables screen clearing. Installer overrides: `OMO_VERSION`, `OMO_BASE_URL`, `OMO_NO_VERIFY=1` (testing only), `PREFIX`.
+
+## Interactive menu
+
+Dashboard, configure all agents, configure one agent, manage presets, browse/search models, manage variants, manage fallbacks, custom providers and models, MCP servers, default OpenCode model, verify, doctor, backup/restore, refresh catalog, Exit.
+
+## Configuration
 
 | File | Purpose |
 | --- | --- |
 | `~/.config/opencode/oh-my-opencode-slim.jsonc` / `.json` | Slim agent/preset settings (`.jsonc` wins) |
 | `~/.config/opencode/opencode.jsonc` / `.json` | OpenCode providers, MCPs, default model |
 
+## Website
+
+Four static pages: home, documentation (14 Markdown topics), playground, and changelog. Built with Astro 7, React 19, Tailwind CSS 4, Motion, Lucide, and xterm.js. The terminal is a deterministic TypeScript state machine: it runs no shell commands, opens no sockets, reads no local files, and adapts its layout to narrow screens. The site has a persistent dark/light theme and a single-open FAQ.
+
 ## Repository layout
 
 ```text
-omo-model-slim                  CLI entry point (argparse)
-omo_model_slim.py               core config logic, JSONC parser, safe writes
-omo_tui.py                      curses terminal UI
-opencode_manage.py              OpenCode provider/MCP editor
-install.sh                      versioned, checksum-verified installer
-tests/                          CLI, installer and config unit tests
-website/                        Astro + React + Tailwind + xterm.js site
-  src/content/docs/             documentation sources (Markdown)
-  tests/                        Playwright browser tests
-.github/workflows/              CI and release pipelines
+omo-model-slim            CLI entry point (argparse + lifecycle commands)
+omo_model_slim.py         core config logic, JSONC parser, safe writes
+omo_tui.py                curses terminal UI
+opencode_manage.py        OpenCode provider/model/MCP editor
+install.sh                version-pinned, checksum-verified installer
+tests/                    CLI, lifecycle, installer and config unit tests
+website/                  Astro + React + Tailwind site
+  src/content/docs/       documentation sources
+  tests/                  Playwright browser tests
+  vercel.json             deployment settings
+.github/workflows/        CI and release pipelines
 ```
 
 ## Development
 
 ```sh
-python3 -m unittest discover -s tests -v
+python3 -m unittest discover -s tests -v          # 37 tests
 
 cd website
 npm ci
 npm run dev
-npm run check
+npm run check                                     # astro check, strict TypeScript
+npx tsc --noEmit
 npm run build
 npx playwright install chromium
-npm run test:e2e
+npm run test:e2e                                  # 34 tests, desktop + mobile
 ```
 
-The terminal in the website is a deterministic TypeScript state machine. It executes no shell commands, opens no sockets, and never reads local files. The site is built with Astro 7, React 19, Tailwind CSS 4 (CSS-first `@theme` tokens), and xterm.js.
+`npm audit` currently reports 0 vulnerabilities.
 
-## Platform verification
+## Verification status
 
-| Platform | Status |
+| Item | Status |
 | --- | --- |
-| macOS (Intel/Apple Silicon) | CI matrix + local installer smoke test |
-| Linux (Ubuntu) | CI matrix + local installer smoke test |
-| Python 3.10 / 3.12 / 3.13 | CI matrix |
-| Clean install from the public one-line installer | Verified on macOS |
+| Python 3.10 / 3.12 / 3.13 on Ubuntu and macOS | CI matrix, green |
+| macOS Apple Silicon (`macos-latest`) | CI + local installer verification |
+| macOS Intel | Not separately verified |
+| Linux (Ubuntu) | CI matrix + installer smoke test in CI |
+| Clean install from the one-line installer | Verified locally on macOS |
 | WSL 1 | Best-effort, unverified |
-| WSL 2 | Not verifiable on GitHub-hosted runners; requires a real WSL environment |
+| WSL 2 | Not verifiable on GitHub-hosted runners |
+| Website build, types, browser tests, Vercel preview | CI, green |
 
 ## Deployment
 
-Vercel: framework **Astro**, root directory `website`, build `npm run build`, output `dist`, production branch `main`. The custom domain https://omo-manager.seri.my.id is deployed from `main` and was verified in a real browser: all four pages render, the terminal shows its full menu at 320px and desktop widths, and the theme toggle works. CI on `main` is green.
+The site deploys from `main` to https://omo-manager.seri.my.id (Vercel: framework Astro, root `website`, build `npm run build`, output `dist`). The live deployment was verified in a browser after merge.
 
-## Security notes
+## Security
 
-- The CLI never prints API keys; credentials stay in OpenCode's auth store.
-- All writes are backed up, validated, atomically replaced, verified, and rolled back on failure. Config symlinks are followed while preserving the link.
-- Review remote installers before piping them to a shell.
-- `npm audit` reports **0 vulnerabilities** with the current Astro 7 dependency set. The site is fully static, renders only trusted repository content, and never uses `define:vars` or untrusted spread attributes.
-- Type safety is enforced with `astro/tsconfigs/strict`; `npm run check` and `npx tsc --noEmit` both pass with no errors.
+- No API keys or credentials are printed by the CLI; authentication stays in OpenCode's auth store.
+- Every write is backed up, validated, atomically replaced, verified, and rolled back on failure. Symlinks are followed while preserving the link.
+- The installer pins the release version, verifies SHA-256 checksums, needs no sudo, and does not write user configuration.
+- The website is fully static, renders only trusted repository content, and executes no user shell commands.
+- Type safety is enforced with `astro/tsconfigs/strict`; `astro check` and `tsc --noEmit` both pass cleanly.
