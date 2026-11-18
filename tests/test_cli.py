@@ -29,6 +29,7 @@ class LifecycleTests(unittest.TestCase):
         result = self.run_cli('upgrade')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.record.read_text(), 'install')
+        self.assertNotIn('Running installer action', result.stdout + result.stderr)
 
     def test_update_and_install_aliases(self):
         for alias in ('update', 'install'):

@@ -3,7 +3,8 @@
 A lightweight, dependency-free Python terminal app for managing [OpenCode](https://opencode.ai) and [Oh My OpenCode Slim](https://github.com/alvinunreal/oh-my-opencode-slim) configuration, plus a static documentation site with a browser-only terminal playground.
 
 - CLI executable: `omo-model-slim`
-- Version: **v1.0.1**
+- Version: **v1.0.2**
+- Lifecycle output: branded, color-aware step summaries for install/upgrade/uninstall/verify
 - Repository: https://github.com/garsetayusuf/omo-model-slim
 - Website: https://omo-manager.seri.my.id
 - License: MIT
@@ -30,7 +31,25 @@ A lightweight, dependency-free Python terminal app for managing [OpenCode](https
 curl -fsSL https://raw.githubusercontent.com/garsetayusuf/omo-model-slim/main/install.sh | bash
 ```
 
-No sudo. The installer downloads the pinned `v1.0.1` artifacts, verifies their SHA-256 checksums, validates Python syntax, and installs into your home directory.
+No sudo. The installer downloads the pinned `v1.0.2` artifacts, verifies their SHA-256 checksums, validates Python syntax, and installs into your home directory.
+
+Lifecycle commands print a compact, color-aware summary:
+
+```text
+OMO Manager - v1.0.2
+
+  *  Install
+  *  1/5  Platform detected             OK macOS
+  *  2/5  Python 3.10+                  OK Python 3.15.2
+  *  3/5  Download & checksums          OK 4 files verified
+  *  4/5  Install application files     OK
+  *  5/5  Verify executable             OK omo-model-slim 1.0.2
+
+  OK Install complete
+    Command   omo-model-slim
+    Location  ~/.local/bin/omo-model-slim
+    Next      omo-model-slim
+```
 
 If `omo-model-slim` is not found afterwards, add `~/.local/bin` to your PATH:
 
@@ -42,7 +61,10 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc   # or ~/.bashrc
 
 ```sh
 omo-model-slim upgrade          # aliases: update, install
-omo-model-slim uninstall        # removes the CLI, keeps configuration
+omo-model-slim uninstall        # removes the CLI, skips PATH cleanup while
+                                # ~/.local/bin still holds other executables;
+                                # otherwise surgically removes just the OMO
+                                # PATH segment from zsh/bash profiles and backs them up
 sh ~/.local/share/omo-model-slim/install.sh verify
 ```
 
@@ -74,7 +96,7 @@ More detail: [website/src/content/docs/installation.md](website/src/content/docs
 | `upgrade` (`update`, `install`) | Re-run the verified installer |
 | `uninstall` | Remove the CLI |
 
-Environment overrides: `OMO_SLIM_CONFIG`, `OMO_OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`; `OMO_BASIC_UI=1` forces the line-based fallback; `OMO_NO_CLEAR=1` disables screen clearing. Installer overrides: `OMO_VERSION`, `OMO_BASE_URL`, `OMO_NO_VERIFY=1` (testing only), `PREFIX`.
+Environment overrides: `OMO_SLIM_CONFIG`, `OMO_OPENCODE_CONFIG`, `OPENCODE_CONFIG_DIR`; `OMO_BASIC_UI=1` forces the line-based fallback; `OMO_NO_CLEAR=1` disables screen clearing. Installer overrides: `OMO_VERSION`, `OMO_BASE_URL`, `OMO_NO_VERIFY=1` (testing only), `PREFIX`, `OMO_COLOR=0` or `NO_COLOR=1` for plain output, `OMO_VERBOSE=1` for per-file checksum details.
 
 ## Interactive menu
 

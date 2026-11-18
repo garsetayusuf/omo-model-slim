@@ -12,6 +12,8 @@ A copy of the installer is installed beside the application files:
 omo-model-slim uninstall
 ```
 
+Uninstall uses smart PATH cleanup: it scans `~/.zshrc`, `~/.zprofile`, `~/.bashrc`, `~/.bash_profile`, and `~/.profile`, and removes only the `~/.local/bin` segment from PATH lines while preserving other directories and quote style. It skips cleanup entirely while `~/.local/bin` still contains other executables, because that PATH entry is probably needed by them. Every edited profile gets a timestamped backup first.
+
 Or run the installed installer directly:
 
 ```sh
