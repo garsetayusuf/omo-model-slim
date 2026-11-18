@@ -33,7 +33,6 @@ const faqs = [
   { q: 'Does it understand preset inheritance?', a: 'Yes. It resolves extends chains, direct and nested preset agents, root-level agents overrides, and inheritModelFrom, then shows the effective model for every agent.' },
   { q: 'Will it rewrite my JSONC or lose fallbacks?', a: 'No. Edits are positional and JSONC-aware: comments, formatting, unrelated keys, and every fallback model stay exactly where they were.' },
   { q: 'How do I undo a change or upgrade?', a: 'Every write creates a timestamped backup and Restore is one menu action away. Run omo-model-slim upgrade to upgrade, or omo-model-slim uninstall to remove the CLI while keeping your configuration.' },
-  { q: 'Does it replace my existing omo-model command?', a: 'No. The installer writes only ~/.local/bin/omo-model-slim. Your existing omo-model executable is never modified.' },
   { q: 'Is the website terminal a real shell?', a: 'No. The homepage preview and the playground are deterministic browser-only simulations. They cannot run commands or read your files.' },
   { q: 'Does the site support light mode?', a: 'Yes. The sun/moon button in the header switches between dark and light themes, and your choice is remembered on this device.' },
 ];
