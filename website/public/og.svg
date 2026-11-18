@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b16"/>
+      <stop offset="1" stop-color="#131d31"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#a78bfa"/>
+      <stop offset="1" stop-color="#7dd3fc"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g opacity="0.09" stroke="#8b7cf6">
+    <path d="M0 120h1200M0 240h1200M0 360h1200M0 480h1200M200 0v630M400 0v630M600 0v630M800 0v630M1000 0v630"/>
+  </g>
+  <text x="80" y="180" font-family="system-ui, sans-serif" font-size="26" fill="#a78bfa" font-weight="600">OMO MANAGER · v1.0.0</text>
+  <text x="80" y="300" font-family="system-ui, sans-serif" font-size="78" fill="#e8edf7" font-weight="800">Your models. Your agents.</text>
+  <text x="80" y="390" font-family="system-ui, sans-serif" font-size="78" fill="url(#accent)" font-weight="800">One terminal.</text>
+  <text x="80" y="470" font-family="system-ui, sans-serif" font-size="26" fill="#94a3b8">Manage OpenCode and Oh My OpenCode Slim configuration without editing JSON.</text>
+  <rect x="80" y="520" width="360" height="58" rx="12" fill="#8b7cf6"/>
+  <text x="260" y="558" text-anchor="middle" font-family="ui-monospace, monospace" font-size="24" fill="#ffffff">omo-model-slim</text>
+</svg>

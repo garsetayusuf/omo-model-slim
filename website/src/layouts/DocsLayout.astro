@@ -1,0 +1,35 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { getCollection, render } from 'astro:content';
+import Base from './Base.astro';
+import DocsNav from '../components/DocsNav';
+import DocsSearch from '../components/DocsSearch';
+
+interface Props { entry: CollectionEntry<'docs'> }
+const { entry } = Astro.props;
+const docs = await getCollection('docs');
+const items = docs
+  .map((doc) => ({ slug: doc.id, title: doc.data.title, order: doc.data.order, description: doc.data.description }))
+  .sort((a, b) => a.order - b.order);
+const { Content } = await render(entry);
+---
+
+<Base title={`${entry.data.title} — OMO Manager docs`} description={entry.data.description}>
+  <div class="container-page grid gap-8 py-10 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-12">
+    <DocsNav items={items} current={entry.id} client:load />
+    <article class="min-w-0 prose-docs">
+      <DocsSearch items={items} client:load />
+      <Content />
+      <nav class="mt-16 flex flex-wrap justify-between gap-4 border-t border-line pt-6 text-sm" aria-label="Documentation pages">
+        {items.findIndex((item) => item.slug === entry.id) > 0 && (
+          <a href={items[items.findIndex((item) => item.slug === entry.id) - 1].slug === 'index' ? '/docs' : `/docs/${items[items.findIndex((item) => item.slug === entry.id) - 1].slug}`}>
+            ← Previous
+          </a>
+        )}
+        {items.findIndex((item) => item.slug === entry.id) < items.length - 1 && (
+          <a href={`/docs/${items[items.findIndex((item) => item.slug === entry.id) + 1].slug}`}>Next →</a>
+        )}
+      </nav>
+    </article>
+  </div>
+</Base>
