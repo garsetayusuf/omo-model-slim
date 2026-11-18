@@ -18,6 +18,7 @@ A lightweight, dependency-free terminal app for managing [OpenCode](https://open
 - Automatic timestamped backups, atomic writes, pre/post-write verification, dry-run previews, and restore
 - Verification against `opencode models`, doctor checks, and a full model catalog refresh
 - Version-pinned installer with SHA-256 verification, rollback, and no `sudo`
+- Website with persistent dark/light theme, single-open FAQ, and a column-aware terminal simulator that fits 320px screens
 
 ## Install
 
@@ -101,7 +102,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-The terminal in the website is a deterministic TypeScript state machine. It executes no shell commands, opens no sockets, and never reads local files.
+The terminal in the website is a deterministic TypeScript state machine. It executes no shell commands, opens no sockets, and never reads local files. The site is built with Astro 7, React 19, Tailwind CSS 4 (CSS-first `@theme` tokens), and xterm.js.
 
 ## Platform verification
 
@@ -110,16 +111,18 @@ The terminal in the website is a deterministic TypeScript state machine. It exec
 | macOS (Intel/Apple Silicon) | CI matrix + local installer smoke test |
 | Linux (Ubuntu) | CI matrix + local installer smoke test |
 | Python 3.10 / 3.12 / 3.13 | CI matrix |
+| Clean install from the public one-line installer | Verified on macOS |
 | WSL 1 | Best-effort, unverified |
 | WSL 2 | Not verifiable on GitHub-hosted runners; requires a real WSL environment |
 
 ## Deployment
 
-Vercel: framework **Astro**, root directory `website`, build `npm run build`, output `dist`, production branch `main`. The custom domain is `omo-manager.seri.my.id`. A live deployment is only claimed after DNS and the Vercel domain are verified.
+Vercel: framework **Astro**, root directory `website`, build `npm run build`, output `dist`, production branch `main`. The custom domain https://omo-manager.seri.my.id is deployed from `main` and was verified in a real browser: all four pages render, the terminal shows its full menu at 320px and desktop widths, and the theme toggle works. CI on `main` is green.
 
 ## Security notes
 
 - The CLI never prints API keys; credentials stay in OpenCode's auth store.
 - All writes are backed up, validated, atomically replaced, verified, and rolled back on failure. Config symlinks are followed while preserving the link.
 - Review remote installers before piping them to a shell.
-- `npm audit` currently reports advisories in Astro 5 and its build/dev toolchain (including a `define:vars` XSS advisory affecting Astro < 6.1.6). This site is fully static, renders only trusted repository content, and never uses `define:vars` or untrusted spread attributes. A framework upgrade to Astro 7 is the tracked follow-up for a clean audit.
+- `npm audit` reports **0 vulnerabilities** with the current Astro 7 dependency set. The site is fully static, renders only trusted repository content, and never uses `define:vars` or untrusted spread attributes.
+- Type safety is enforced with `astro/tsconfigs/strict`; `npm run check` and `npx tsc --noEmit` both pass with no errors.

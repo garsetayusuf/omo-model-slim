@@ -41,10 +41,7 @@ export default function InstallCommand() {
         </code>
         <CopyButton text={SITE.install} testId="install-copy" />
       </div>
-      <p className="mt-4 text-xs text-muted">
-        Installs to <code className="text-codeink">~/.local/bin/omo-model-slim</code>. Your existing{' '}
-        <code className="text-codeink">omo-model</code> is never modified.
-      </p>
+      <p className="mt-4 text-xs text-muted">Installation stays in your home directory. Review the script before running it.</p>
     </div>
   );
 }
