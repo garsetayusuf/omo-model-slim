@@ -1,0 +1,9 @@
+---
+import { getCollection } from 'astro:content';
+import DocsLayout from '../../layouts/DocsLayout.astro';
+
+const entry = (await getCollection('docs')).find((doc) => doc.id === 'index');
+if (!entry) throw new Error('Missing docs/index.md');
+---
+
+<DocsLayout entry={entry} />

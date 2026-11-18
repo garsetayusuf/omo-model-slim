@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify version matches tag
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          grep -q "VERSION = \"$TAG\"" omo_model_slim.py
+      - name: Run tests
+        run: python -m unittest discover -s tests -v
+      - name: Package release
+        run: |
+          set -eu
+          NAME="omo-manager-${GITHUB_REF_NAME}"
+          mkdir -p "dist/$NAME"
+          cp omo-model-slim omo_model_slim.py omo_tui.py opencode_manage.py install.sh README.md LICENSE "dist/$NAME/"
+          (cd dist && zip -qr "$NAME.zip" "$NAME")
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          names = ['omo-model-slim', 'omo_model_slim.py', 'omo_tui.py', 'opencode_manage.py', 'install.sh']
+          zips = sorted(str(p.relative_to('dist')) for p in Path('dist').glob('*.zip'))
+          lines = []
+          for name in names + zips:
+              path = Path(name) if Path(name).exists() else Path('dist') / name
+              lines.append(f'{hashlib.sha256(path.read_bytes()).hexdigest()}  {Path(name).name}\n')
+          Path('SHA256SUMS').write_text(''.join(lines))
+          PY
+          cat SHA256SUMS
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" dist/*.zip SHA256SUMS --generate-notes --verify-tag

@@ -1,0 +1,61 @@
+---
+import '../styles/global.css';
+import SiteNav from '../components/SiteNav';
+import { SITE } from '../lib/config';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = `${SITE.name} — OpenCode configuration made simple`,
+  description = SITE.description,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, SITE.website).toString();
+const ogImage = new URL('/og.svg', SITE.website).toString();
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#070b16" />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={SITE.name} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-night text-ink">
+    <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-white">Skip to content</a>
+    <div class="pointer-events-none fixed inset-0 aurora opacity-80" aria-hidden="true"></div>
+    <div class="relative flex min-h-screen flex-col">
+      <SiteNav pathname={Astro.url.pathname} client:load />
+      <main id="main" class="flex-1"><slot /></main>
+      <footer class="mt-20 border-t border-line/70 py-10">
+        <div class="container-page flex flex-wrap items-center justify-between gap-4 text-sm text-muted">
+          <p>OMO Manager · Open-source developer tooling · v{SITE.version}</p>
+          <div class="flex flex-wrap gap-5">
+            <a href="/docs" class="hover:text-ink">Docs</a>
+            <a href="/playground" class="hover:text-ink">Playground</a>
+            <a href="/changelog" class="hover:text-ink">Changelog</a>
+            <a href={SITE.repo} target="_blank" rel="noopener noreferrer" class="hover:text-ink">GitHub ↗</a>
+          </div>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

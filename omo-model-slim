@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""OMO Manager — manage OpenCode and Oh My OpenCode Slim configuration."""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from pathlib import Path
+
+# Resolve symlinks so sibling modules are importable from ~/.local/bin wrappers.
+_HERE = Path(os.path.realpath(__file__)).parent
+if str(_HERE) not in sys.path:
+    sys.path.insert(0, str(_HERE))
+
+import omo_model_slim as slim  # noqa: E402
+import omo_tui  # noqa: E402
+
+
+def build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(prog="omo-model-slim", description="Manage OpenCode and Oh My OpenCode Slim configuration")
+    parser.add_argument("--version", action="version", version=f"omo-model-slim {slim.VERSION}")
+    subs = parser.add_subparsers(dest="action")
+
+    set_cmd = subs.add_parser("set", help="Set the primary model for selected agents")
+    set_cmd.add_argument("model")
+    group = set_cmd.add_mutually_exclusive_group()
+    group.add_argument("--all", action="store_true")
+    group.add_argument("--agent", action="append", default=[])
+    group.add_argument("--category", action="append", default=[])
+    set_cmd.add_argument("--dry-run", action="store_true")
+    set_cmd.add_argument("--yes", "-y", action="store_true")
+
+    edit_cmd = subs.add_parser("edit", help="Edit an existing variant or fallback entry")
+    edit_cmd.add_argument("field", choices=["variant", "fallback"])
+    edit_cmd.add_argument("target", help="Exact dot-separated field path from 'current'")
+    edit_cmd.add_argument("value")
+    edit_cmd.add_argument("--yes", "-y", action="store_true")
+    edit_cmd.add_argument("--dry-run", action="store_true")
+
+    for name in ("list", "free", "providers", "auth", "current", "verify", "backups", "config-path", "opencode-current"):
+        subs.add_parser(name)
+
+    search = subs.add_parser("search")
+    search.add_argument("keyword")
+
+    effective = subs.add_parser("effective", help="Show resolved models after preset inheritance and root overrides")
+    effective.add_argument("--preset", help="Resolve a specific preset instead of the active one")
+
+    doctor = subs.add_parser("doctor")
+    doctor.add_argument("--full", action="store_true")
+
+    restore = subs.add_parser("restore", help="Restore the most recent backup")
+    restore.add_argument("--yes", "-y", action="store_true")
+    return parser
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_parser().parse_args(argv if argv is not None else sys.argv[1:])
+    action = args.action
+    try:
+        if action is None:
+            omo_tui.interactive()
+        elif action == "set":
+            slim.apply(args.model, args.agent, args.category, args.all, args.yes, args.dry_run)
+        elif action == "edit":
+            paths = slim.option_paths(slim.read()[1], args.field)
+            match = next((p for p in paths if ".".join(map(str, p)) == args.target), None)
+            if match is None:
+                raise RuntimeError("Unknown existing field; use 'current' to inspect the configuration")
+            if args.field == "fallback" and args.value not in set(slim.models()):
+                raise RuntimeError("Unknown model")
+            slim.edit_value(match, args.value, yes=args.yes, dry_run=args.dry_run)
+        elif action in ("list", "free", "search"):
+            for model in slim.models():
+                if action == "list" or (action == "free" and slim.free_model(model)) or (action == "search" and args.keyword.lower() in model.lower()):
+                    print(model)
+        elif action in ("providers", "auth"):
+            for provider in sorted(slim.auth_providers()):
+                print(provider)
+        elif action == "current":
+            data = slim.read()[1]
+            for path, model in slim.model_paths(data).items():
+                print(f'{".".join(map(str, path))}: {model}')
+            for kind in ("variant", "fallback"):
+                for path, value in slim.option_paths(data, kind).items():
+                    print(f'{".".join(map(str, path))}: {value}')
+        elif action == "effective":
+            _, data = slim.read()
+            agents = slim.effective_agents(data, args.preset)
+            for name, entry in agents.items():
+                variant = entry.get("variant", "")
+                print(f"{name}: {slim.effective_model(entry)}" + (f"  [{variant}]" if variant else ""))
+        elif action == "config-path":
+            print(slim.CONFIG)
+        elif action == "opencode-current":
+            import opencode_manage as oc
+
+            print(json.dumps(oc.load()[1], indent=2, ensure_ascii=False))
+        elif action == "verify":
+            return slim.verify()
+        elif action == "doctor":
+            return slim.doctor(args.full)
+        elif action == "backups":
+            for path in slim.backups():
+                print(path)
+        elif action == "restore":
+            available = slim.backups()
+            if not available:
+                raise RuntimeError("No backups found")
+            slim.restore(available[0].read_text(encoding="utf-8"), yes=args.yes)
+    except (RuntimeError, ValueError, OSError, KeyboardInterrupt, EOFError) as exc:
+        print(f"✗ {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
