@@ -32,7 +32,7 @@ export default function CopyButton({ text, label = 'Copy', className = '', testI
         onClick={copy}
         aria-label={`${label} to clipboard`}
         data-testid={testId}
-        className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel2 px-3 text-xs font-medium text-ink hover:border-brand2/70 hover:bg-[#1a2740]"
+        className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line bg-panel2 px-3 text-xs font-medium text-ink hover:border-brand2/70 hover:bg-surface-2"
       >
         <AnimatePresence mode="wait" initial={false}>
           <motion.span

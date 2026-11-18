@@ -50,6 +50,8 @@ omo-model-slim edit variant presets.openai.oracle.variant high
 omo-model-slim verify
 omo-model-slim doctor --full
 omo-model-slim config-path
+omo-model-slim upgrade               # upgrade/reinstall (aliases: update, install)
+omo-model-slim uninstall             # remove the CLI, keep configuration
 ```
 
 Use `--dry-run` to preview a change without writing, and `--yes` to skip the confirmation prompt in scripts.

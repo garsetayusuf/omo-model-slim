@@ -3,7 +3,7 @@
 A lightweight, dependency-free terminal app for managing [OpenCode](https://opencode.ai) and [Oh My OpenCode Slim](https://github.com/alvinunreal/oh-my-opencode-slim) configuration — plus a modern Astro documentation site with a browser-only terminal playground.
 
 - CLI executable: `omo-model-slim`
-- Version: **v1.0.0**
+- Version: **v1.0.1**
 - Repository: https://github.com/garsetayusuf/omo-model-slim
 - Website: https://omo-manager.seri.my.id
 - License: MIT
@@ -36,8 +36,9 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc   # or ~/.bashrc
 ### Verify, upgrade, uninstall, rollback
 
 ```sh
+omo-model-slim upgrade
+omo-model-slim uninstall
 sh ~/.local/share/omo-model-slim/install.sh verify
-sh ~/.local/share/omo-model-slim/install.sh uninstall
 ```
 
 Upgrades keep the previous application directory at `~/.local/share/omo-model-slim.rollback.<timestamp>`:
@@ -60,6 +61,8 @@ omo-model-slim set openai/gpt-6.1-sol --all --dry-run
 omo-model-slim edit variant presets.openai.oracle.variant high
 omo-model-slim verify
 omo-model-slim doctor --full
+omo-model-slim upgrade               # re-run the verified installer
+omo-model-slim uninstall             # remove the CLI, keep your configuration
 ```
 
 Configuration files:

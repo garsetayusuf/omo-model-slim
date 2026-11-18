@@ -35,15 +35,15 @@ export default function InstallCommand() {
         ))}
       </div>
       <p className="mb-4 text-sm text-muted">{hint} Requires Python 3.10+ and curl. No sudo required.</p>
-      <div className="flex items-start gap-3 rounded-xl border border-line bg-[#080d18] p-4">
-        <code className="min-w-0 flex-1 break-all font-mono text-[13px] leading-6 text-[#c7d2fe]" data-testid="install-text">
+      <div className="flex items-start gap-3 rounded-xl border border-line bg-code p-4">
+        <code className="min-w-0 flex-1 break-all font-mono text-[13px] leading-6 text-codeink" data-testid="install-text">
           {SITE.install}
         </code>
         <CopyButton text={SITE.install} testId="install-copy" />
       </div>
       <p className="mt-4 text-xs text-muted">
-        Installs to <code className="text-[#c7d2fe]">~/.local/bin/omo-model-slim</code>. Your existing{' '}
-        <code className="text-[#c7d2fe]">omo-model</code> is never modified.
+        Installs to <code className="text-codeink">~/.local/bin/omo-model-slim</code>. Your existing{' '}
+        <code className="text-codeink">omo-model</code> is never modified.
       </p>
     </div>
   );

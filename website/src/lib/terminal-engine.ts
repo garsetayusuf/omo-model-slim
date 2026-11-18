@@ -240,37 +240,62 @@ function viewerLines(state: State): string[] {
   }
 }
 
-export function render(state: State): string {
-  const lines: string[] = [];
-  lines.push(`${C.boldCyan}  OMO MANAGER  ·  v${SITE.version}  ·  INTERACTIVE DEMO${C.reset}`);
-  lines.push(`${C.dim}  ${'─'.repeat(46)}${C.reset}`);
-  lines.push(`  Preset: ${C.boldCyan}${state.preset}${C.reset}  ·  Agent: ${state.agent}`);
-  if (state.screen === 'models') {
-    lines.push(`  Model: ${state.assignments[key(state.preset, state.agent)]}`);
-    lines.push(`  ${C.yellow}Search: ${state.search || '_'}${C.reset}`);
+export function render(state: State, rows?: number, cols?: number): string {
+  const narrow = (cols ?? 80) < 46;
+  const line = (value: string) => value.slice(0, Math.max(12, (cols ?? 80) - 2));
+  const header: string[] = [
+    narrow
+      ? `${C.boldCyan}  OMO MANAGER · v${SITE.version} · DEMO${C.reset}`
+      : `${C.boldCyan}  OMO MANAGER  ·  v${SITE.version}  ·  INTERACTIVE DEMO${C.reset}`,
+    `${C.dim}  ${'─'.repeat(Math.max(10, Math.min(46, (cols ?? 50) - 4)))}${C.reset}`,
+  ];
+  if (narrow) {
+    header.push(`  Preset: ${C.boldCyan}${state.preset}${C.reset}`, `  Agent:  ${state.agent}`);
   } else {
-    lines.push(`  Model: ${state.assignments[key(state.preset, state.agent)]}`);
+    header.push(`  Preset: ${C.boldCyan}${state.preset}${C.reset}  ·  Agent: ${state.agent}`);
   }
-  lines.push('');
+  header.push(`  Model: ${line(state.assignments[key(state.preset, state.agent)])}`);
+  if (state.screen === 'models') {
+    header.push(`  ${C.yellow}Search: ${state.search || '_'}${C.reset}`);
+  }
+  header.push('');
 
   const list = options(state);
+  const body: string[] = [];
   if (list.length) {
-    if (state.screen === 'menu') lines.push(`  ${C.dim}CHOOSE AN ACTION${C.reset}`);
+    if (state.screen === 'menu') body.push(`  ${C.dim}CHOOSE AN ACTION${C.reset}`);
     list.forEach((option, index) => {
-      const selected = index === state.index;
-      lines.push(selected
+      body.push(index === state.index
         ? `${C.green}  ❯  ${option}${C.reset}`
         : `     ${option}`);
     });
   } else {
-    lines.push(...viewerLines(state));
+    body.push(...viewerLines(state));
   }
 
-  lines.push('');
-  if (state.notice) lines.push(`  ${C.yellow}${state.notice}${C.reset}`);
-  lines.push(`${C.dim}  ↑↓ select  ·  Enter open  ·  Esc back  ·  type to search${C.reset}`);
-  lines.push(`${C.dim}  Browser simulation only — no local files, commands or credentials.${C.reset}`);
-  return lines.join('\r\n') + '\r\n';
+  const footer: string[] = [''];
+  if (state.notice) footer.push(`  ${C.yellow}${line(state.notice)}${C.reset}`);
+  footer.push(narrow
+    ? `${C.dim}  ↑↓ Enter Esc · type to search${C.reset}`
+    : `${C.dim}  ↑↓ select  ·  Enter open  ·  Esc back  ·  type to search${C.reset}`);
+  footer.push(narrow
+    ? `${C.dim}  Demo only — no local access${C.reset}`
+    : `${C.dim}  Browser simulation only — no local files, commands or credentials.${C.reset}`);
+
+  let lines = [...header, ...body, ...footer];
+  if (rows && rows > 0 && lines.length > rows) {
+    const leading = header.slice(0, 5);
+    const trailing = footer.slice(state.notice ? -3 : -2);
+    const room = Math.max(1, rows - leading.length - trailing.length - 1);
+    const visible = body.slice(0, room);
+    if (body.length > room) {
+      visible.push(`${C.dim}  … ${body.length - room} more — resize for more${C.reset}`);
+    }
+    lines = [...leading, ...visible, ...trailing];
+  }
+  // No trailing newline: the cursor stays on the last rendered row so a frame
+  // that exactly fills the viewport never scrolls the header out of view.
+  return lines.join('\r\n');
 }
 
 export function handleData(data: string, dispatch: (action: Action) => void): void {

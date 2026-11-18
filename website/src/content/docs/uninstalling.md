@@ -9,6 +9,12 @@ description: Remove the CLI without losing configuration.
 A copy of the installer is installed beside the application files:
 
 ```sh
+omo-model-slim uninstall
+```
+
+Or run the installed installer directly:
+
+```sh
 sh ~/.local/share/omo-model-slim/install.sh uninstall
 ```
 

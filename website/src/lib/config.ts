@@ -1,6 +1,6 @@
 export const SITE = {
   name: 'OMO Manager',
-  version: '1.0.0',
+  version: '1.0.1',
   description:
     'Manage OpenCode and Oh My OpenCode Slim models, presets, providers, and MCP servers without manually editing JSON.',
   repo: 'https://github.com/garsetayusuf/omo-model-slim',

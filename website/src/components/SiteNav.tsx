@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Menu, X } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 import { NAV, SITE } from '../lib/config';
 
 interface Props { pathname: string }
@@ -12,37 +13,40 @@ export default function SiteNav({ pathname }: Props) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/70 bg-night/85 backdrop-blur-xl">
-      <div className="container-page flex h-16 items-center justify-between gap-4">
-        <a href="/" className="flex items-center gap-2 text-base font-bold tracking-tight text-ink" onClick={() => setOpen(false)}>
+      <div className="container-page flex h-16 items-center gap-3">
+        <a href="/" className="flex shrink-0 items-center gap-2 text-base font-bold tracking-tight text-ink" onClick={() => setOpen(false)}>
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand/20 font-mono text-sm text-brand2">⌘</span>
           OMO <span className="text-brand2">Manager</span>
         </a>
-        <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
-          {links.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              target={item.external ? '_blank' : undefined}
-              rel={item.external ? 'noopener noreferrer' : undefined}
-              aria-current={item.active ? 'page' : undefined}
-              className={`rounded-lg px-3 py-2 text-sm ${item.active ? 'bg-panel2 text-ink' : 'text-muted hover:bg-panel2/60 hover:text-ink'}`}
-            >
-              {item.label}{item.external ? ' ↗' : ''}
-            </a>
-          ))}
-          <a href="#install" className="btn-primary ml-2 hidden lg:inline-flex">Install</a>
-        </nav>
-        <button
-          type="button"
-          aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
-          aria-expanded={open}
-          aria-controls="mobile-navigation"
-          onClick={() => setOpen((value) => !value)}
-          className="grid h-11 w-11 place-items-center rounded-lg border border-line text-ink md:hidden"
-          data-testid="nav-toggle"
-        >
-          {open ? <X size={20} /> : <Menu size={20} />}
-        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <nav aria-label="Main navigation" className="hidden items-center gap-1 md:flex">
+            {links.map((item) => (
+              <a
+                key={item.label}
+                href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
+                aria-current={item.active ? 'page' : undefined}
+                className={`rounded-lg px-3 py-2 text-sm ${item.active ? 'bg-panel2 text-ink' : 'text-muted hover:bg-panel2/60 hover:text-ink'}`}
+              >
+                {item.label}{item.external ? ' ↗' : ''}
+              </a>
+            ))}
+            <a href="#install" className="btn-primary ml-1 hidden lg:inline-flex">Install</a>
+          </nav>
+          <ThemeToggle />
+          <button
+            type="button"
+            aria-label={open ? 'Close navigation menu' : 'Open navigation menu'}
+            aria-expanded={open}
+            aria-controls="mobile-navigation"
+            onClick={() => setOpen((value) => !value)}
+            className="grid h-11 w-11 place-items-center rounded-lg border border-line text-ink md:hidden"
+            data-testid="nav-toggle"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
       </div>
       <AnimatePresence>
         {open && (
@@ -69,7 +73,7 @@ export default function SiteNav({ pathname }: Props) {
                   {item.label}{item.external ? ' ↗' : ''}
                 </a>
               ))}
-              <p className="px-3 pb-2 pt-4 text-xs text-muted">OMO Manager v{SITE.version} · browser simulation only</p>
+              <p className="mt-2 border-t border-line px-3 pt-4 text-xs text-muted">OMO Manager v{SITE.version} · demo only</p>
             </div>
           </motion.nav>
         )}
