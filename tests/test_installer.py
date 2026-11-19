@@ -17,12 +17,12 @@ def sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def make_source(folder: Path, version: str = "1.0.3") -> Path:
+def make_source(folder: Path, version: str = "1.0.4") -> Path:
     source = folder / "source"
     source.mkdir(parents=True, exist_ok=True)
     for name in FILES:
         text = (ROOT / name).read_text(encoding="utf-8")
-        text = text.replace('VERSION = "1.0.3"', f'VERSION = "{version}"') if name == "omo_model_slim.py" else text
+        text = text.replace('VERSION = "1.0.4"', f'VERSION = "{version}"') if name == "omo_model_slim.py" else text
         (source / name).write_text(text, encoding="utf-8")
     manifest = "".join(f"{sha256(source / name)}  {name}\n" for name in FILES)
     (source / "SHA256SUMS").write_text(manifest, encoding="utf-8")
@@ -39,7 +39,7 @@ class InstallerTests(unittest.TestCase):
         self.env = {
             **os.environ,
             "OMO_BASE_URL": self.source.as_uri(),
-            "OMO_VERSION": "v1.0.3",
+            "OMO_VERSION": "v1.0.4",
             "PREFIX": str(self.prefix),
         }
 
@@ -62,7 +62,7 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("Install complete", result.stdout)
         self.assertIn("Download & checksums", result.stdout)
         version = subprocess.run([str(wrapper), "--version"], capture_output=True, text=True)
-        self.assertEqual(version.stdout.strip(), "omo-model-slim 1.0.3")
+        self.assertEqual(version.stdout.strip(), "omo-model-slim 1.0.4")
         verified = self.run_installer("verify")
         self.assertEqual(verified.returncode, 0, verified.stdout + verified.stderr)
         self.assertIn("Installation is healthy", verified.stdout)
@@ -84,14 +84,32 @@ class InstallerTests(unittest.TestCase):
         self.assertIn("checksum", result.stdout + result.stderr)
         self.assertFalse((self.prefix / "bin" / "omo-model-slim").exists())
 
+    def test_same_version_reports_already_up_to_date(self):
+        self.assertEqual(self.run_installer().returncode, 0)
+        before = list((self.prefix / "share").glob("omo-model-slim.rollback.*"))
+        result = self.run_installer()
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Already up to date", result.stdout)
+        self.assertIn("OMO_FORCE=1", result.stdout)
+        self.assertNotIn("complete", result.stdout)
+        self.assertEqual(list((self.prefix / "share").glob("omo-model-slim.rollback.*")), before)
+
+    def test_force_reinstalls_same_version(self):
+        self.assertEqual(self.run_installer().returncode, 0)
+        env = {**self.env, "OMO_FORCE": "1"}
+        result = self.run_installer(env=env)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("Reinstall complete", result.stdout)
+        self.assertTrue(list((self.prefix / "share").glob("omo-model-slim.rollback.*")))
+
     def test_upgrade_keeps_rollback_copy(self):
         self.assertEqual(self.run_installer().returncode, 0)
-        upgraded = make_source(self.base / "upgrade", version="1.0.4")
-        env = {**self.env, "OMO_BASE_URL": upgraded.as_uri()}
+        upgraded = make_source(self.base / "upgrade", version="1.0.5")
+        env = {**self.env, "OMO_BASE_URL": upgraded.as_uri(), "OMO_VERSION": "v1.0.5"}
         result = self.run_installer(env=env)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         version = subprocess.run([str(self.prefix / "bin" / "omo-model-slim"), "--version"], capture_output=True, text=True)
-        self.assertEqual(version.stdout.strip(), "omo-model-slim 1.0.4")
+        self.assertEqual(version.stdout.strip(), "omo-model-slim 1.0.5")
         self.assertTrue(list((self.prefix / "share").glob("omo-model-slim.rollback.*")))
         self.assertIn("rollback", result.stdout)
 

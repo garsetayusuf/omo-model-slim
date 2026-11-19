@@ -5,7 +5,7 @@
 set -eu
 
 REPO=${OMO_REPO:-garsetayusuf/omo-model-slim}
-VERSION=${OMO_VERSION:-v1.0.3}
+VERSION=${OMO_VERSION:-v1.0.4}
 PREFIX=${PREFIX:-$HOME/.local}
 BIN=$PREFIX/bin
 APP=$PREFIX/share/omo-model-slim
@@ -140,12 +140,48 @@ verify_manifest() {
     fi
 }
 
+normalize_version() { printf '%s' "$1" | sed 's/^v//'; }
+
+installed_version() {
+    [ -x "$BIN/omo-model-slim" ] || return 0
+    "$BIN/omo-model-slim" --version 2>/dev/null | awk '{print $NF}' | sed 's/^v//'
+}
+
+version_gt() {
+    awk -v a="$1" -v b="$2" 'BEGIN {
+        na = split(a, x, "."); nb = split(b, y, "."); n = (na > nb ? na : nb)
+        for (i = 1; i <= n; i++) {
+            p = x[i] + 0; q = y[i] + 0
+            if (p > q) exit 0
+            if (p < q) exit 1
+        }
+        exit 1
+    }'
+}
+
 do_install() {
-    if [ -f "$APP/omo-model-slim" ]; then
-        header 'Upgrade'
-    else
-        header 'Install'
+    TARGET_VERSION=$(normalize_version "$VERSION")
+    INSTALLED_VERSION=$(installed_version)
+    ACTION_LABEL='Install'
+    if [ -n "$INSTALLED_VERSION" ]; then
+        if [ "$INSTALLED_VERSION" = "$TARGET_VERSION" ]; then
+            if [ "${OMO_FORCE:-0}" != 1 ]; then
+                header 'Update check'
+                TOTAL=2
+                done_step 'Installed version' "$INSTALLED_VERSION"
+                done_step 'Release version' "$TARGET_VERSION"
+                summary 'Already up to date' \
+                    "Version   $VERSION" \
+                    'Next      omo-model-slim' \
+                    'Force     OMO_FORCE=1 omo-model-slim upgrade'
+                return 0
+            fi
+            ACTION_LABEL='Reinstall'
+        elif version_gt "$TARGET_VERSION" "$INSTALLED_VERSION"; then
+            ACTION_LABEL='Upgrade'
+        fi
     fi
+    header "$ACTION_LABEL"
 
     PLATFORM=$(detect_platform)
     [ "$PLATFORM" != Unsupported ] || fail 'unsupported operating system (need macOS, Linux, or WSL)'
@@ -205,10 +241,10 @@ do_install() {
         *) NEXT="export PATH=\"$BIN:\$PATH\"  # then omo-model-slim" ;;
     esac
     if [ -n "$ROLLBACK" ]; then
-        summary 'Upgrade complete' "Command   omo-model-slim" "Location  $BIN/omo-model-slim" \
+        summary "$ACTION_LABEL complete" "Command   omo-model-slim" "Location  $BIN/omo-model-slim" \
             "Rollback  $ROLLBACK" "Next      $NEXT"
     else
-        summary 'Install complete' "Command   omo-model-slim" "Location  $BIN/omo-model-slim" "Next      $NEXT"
+        summary "$ACTION_LABEL complete" "Command   omo-model-slim" "Location  $BIN/omo-model-slim" "Next      $NEXT"
     fi
     return 0
 }
