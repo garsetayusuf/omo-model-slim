@@ -5,7 +5,7 @@
 set -eu
 
 REPO=${OMO_REPO:-garsetayusuf/omo-model-slim}
-VERSION=${OMO_VERSION:-v1.0.2}
+VERSION=${OMO_VERSION:-v1.0.3}
 PREFIX=${PREFIX:-$HOME/.local}
 BIN=$PREFIX/bin
 APP=$PREFIX/share/omo-model-slim
@@ -47,10 +47,8 @@ else
     SEP='-'
 fi
 
-paint() { printf '%b%s%b' "$1" "$2" "$C_RESET"; }
-
 header() {
-    printf '%b%s%s %s%s%s %s%b\n\n' "$C_BOLD$C_ACCENT" 'OMO Manager' "$C_RESET" "$C_DIM" "$SEP" "$C_DIM" "$VERSION" "$C_RESET"
+    printf '%b\n\n' "${C_BOLD}${C_ACCENT}OMO Manager${C_RESET} ${C_DIM}${SEP}${C_DIM} ${VERSION}${C_RESET}"
     printf '  %s  %s\n' "$I_STEP" "$1"
 }
 
@@ -63,21 +61,21 @@ step() {
 done_step() {
     step "$1"
     if [ -n "${2:-}" ]; then
-        printf '%b%s%s %s%b\n' "$C_OK" "$I_OK" "$C_RESET" "$2" "$C_RESET"
+        printf '%b\n' "${C_OK}${I_OK}${C_RESET} ${2}${C_RESET}"
     else
-        printf '%b%s%s%b\n' "$C_OK" "$I_OK" "$C_RESET" "$C_RESET"
+        printf '%b\n' "${C_OK}${I_OK}${C_RESET}"
     fi
 }
 
 summary() {
     title=$1
     shift
-    printf '\n  %b%s%s %s%b\n' "$C_BOLD$C_OK" "$I_OK" "$C_RESET" "$title" "$C_RESET"
+    printf '\n  %b\n' "${C_BOLD}${C_OK}${I_OK}${C_RESET} ${title}${C_RESET}"
     for line in "$@"; do printf '    %s\n' "$line"; done
 }
 
 fail() {
-    printf '\n  %b%s%s %s%b\n' "$C_ERR" "$I_ERR" "$C_RESET" "$*" "$C_RESET" >&2
+    printf '\n  %b\n' "${C_ERR}${I_ERR}${C_RESET} ${*}${C_RESET}" >&2
     printf '    No changes were made.\n' >&2
     exit 1
 }
