@@ -27,7 +27,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-VERSION = "1.0.3"
+VERSION = "1.0.4"
 CONFIG_DIR = Path(os.environ.get("OPENCODE_CONFIG_DIR", "~/.config/opencode")).expanduser()
 AGENT_NAMES = (
     "orchestrator",

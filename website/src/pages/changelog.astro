@@ -15,6 +15,29 @@ import { SITE } from '../lib/config';
     <div class="mt-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
       <div class="min-w-0 space-y-6">
         <Reveal>
+          <article class="surface p-6 sm:p-8" id="v1-0-4">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h2 class="text-2xl font-bold text-ink">v1.0.4</h2>
+              <a href={`${SITE.repo}/releases/tag/v1.0.4`} target="_blank" rel="noopener noreferrer" class="text-sm text-brand2 hover:text-white">GitHub release ↗</a>
+            </div>
+            <p class="mt-1 text-sm text-muted">Patch release · stable</p>
+
+            <h3 class="mt-8 text-sm font-semibold uppercase tracking-widest text-brand2">Highlights</h3>
+            <ul class="mt-4 space-y-3 text-sm leading-6 text-muted">
+              <li>Upgrade now compares installed and release versions first and reports "Already up to date" when nothing changes.</li>
+              <li><code>OMO_FORCE=1 omo-model-slim upgrade</code> still performs a full reinstall with a fresh rollback copy.</li>
+              <li>No unnecessary downloads or rollback copies when versions match.</li>
+            </ul>
+
+            <h3 class="mt-8 text-sm font-semibold uppercase tracking-widest text-brand2">Breaking changes</h3>
+            <p class="mt-3 text-sm text-muted">None. Configuration files are unchanged.</p>
+
+            <h3 class="mt-8 text-sm font-semibold uppercase tracking-widest text-brand2">Migration</h3>
+            <p class="mt-3 text-sm leading-6 text-muted">Run <code>omo-model-slim upgrade</code>; it will report whether an update was needed.</p>
+          </article>
+        </Reveal>
+
+        <Reveal>
           <article class="surface p-6 sm:p-8" id="v1-0-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
               <h2 class="text-2xl font-bold text-ink">v1.0.3</h2>
