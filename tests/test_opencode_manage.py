@@ -82,6 +82,14 @@ class OpenCodeConfigTests(unittest.TestCase):
         self.assertTrue(link.is_symlink())
         self.assertFalse(oc.parse(real.read_text())["mcp"]["foo"]["enabled"])
 
+    def test_add_section_after_trailing_line_comment(self):
+        self.path.write_text('{\n "theme": "dark" // keep this comment\n}\n', encoding="utf-8")
+        oc.save_section('model', 'local/test', yes=True)
+        source, data = oc.load()
+        self.assertEqual(data['model'], 'local/test')
+        self.assertIn('// keep this comment', source)
+        self.assertEqual(data['theme'], 'dark')
+
     def test_config_dir_precedence(self):
         with patch.dict(os.environ, {"OMO_OPENCODE_CONFIG": "", "OPENCODE_CONFIG_DIR": self.temp.name}):
             self.assertEqual(oc.config_path(), self.path)

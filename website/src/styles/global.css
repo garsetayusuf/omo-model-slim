@@ -71,6 +71,8 @@ body {
   transition: background-color .2s ease, color .2s ease;
 }
 
+code { overflow-wrap: anywhere; }
+
 ::selection { background: rgb(var(--accent) / .35); }
 
 a, button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease; }

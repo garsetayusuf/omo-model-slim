@@ -137,10 +137,20 @@ def save_section(section,value,yes=False):
         a,b=span
         updated=source[:a]+replacement+source[b:]
     else:
-        pos=_mask(source).rfind('}')
-        prefix=source[:pos].rstrip()
-        comma='' if prefix.rstrip().endswith(('{',',')) else ','
-        updated=prefix+comma+'\n  '+json.dumps(section)+': '+replacement.replace('\n','\n  ')+ '\n'+source[pos:]
+        masked=_mask(source)
+        pos=masked.rfind('}')
+        if pos<0:raise ValueError('Invalid configuration root')
+        i=pos-1
+        while i>=0 and masked[i].isspace():i-=1
+        if i<0:raise ValueError('Invalid configuration root')
+        comma='' if masked[i] in '{,' else ','
+        comma_at=i+1
+        # Insert after the line that owns the last token so a trailing comment
+        # stays attached to its property instead of swallowing the new section.
+        newline=source.find('\n',comma_at,pos)
+        insert_at=newline+1 if newline>=0 else comma_at
+        section_text='  '+json.dumps(section)+': '+replacement.replace('\n','\n  ')+'\n'
+        updated=source[:comma_at]+comma+source[comma_at:insert_at]+section_text+source[insert_at:]
     parse(updated)
     target=write_target()
     target.parent.mkdir(parents=True,exist_ok=True)

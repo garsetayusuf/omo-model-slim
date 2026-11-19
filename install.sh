@@ -5,7 +5,7 @@
 set -eu
 
 REPO=${OMO_REPO:-garsetayusuf/omo-model-slim}
-VERSION=${OMO_VERSION:-v1.0.5}
+VERSION=${OMO_VERSION:-v1.0.6}
 PREFIX=${PREFIX:-$HOME/.local}
 BIN=$PREFIX/bin
 APP=$PREFIX/share/omo-model-slim
@@ -299,13 +299,14 @@ cleanup_path_lines() {
                     quote = "\047"; value = substr(value, 2, length(value) - 2)
                 }
                 n = split(value, parts, ":")
-                out = ""; changed = 0; added = 0
+                out = ""; changed = 0; added = 0; first = 1
                 for (i = 1; i <= n; i++) {
                     seg = parts[i]
-                    if (seg == "") continue
                     if (is_omo(seg)) { changed = 1; continue }
-                    out = out (out == "" ? "" : ":") seg
-                    if (!is_path(seg)) added = 1
+                    if (!first) out = out ":"
+                    out = out seg
+                    first = 0
+                    if (seg != "" && !is_path(seg)) added = 1
                 }
                 if (!changed) return line
                 if (!added) return DROP
