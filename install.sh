@@ -5,7 +5,7 @@
 set -eu
 
 REPO=${OMO_REPO:-garsetayusuf/omo-model-slim}
-VERSION=${OMO_VERSION:-v1.0.4}
+VERSION=${OMO_VERSION:-v1.0.5}
 PREFIX=${PREFIX:-$HOME/.local}
 BIN=$PREFIX/bin
 APP=$PREFIX/share/omo-model-slim
