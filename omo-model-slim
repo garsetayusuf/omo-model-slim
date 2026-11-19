@@ -24,11 +24,20 @@ INSTALLER_URL = 'https://raw.githubusercontent.com/garsetayusuf/omo-model-slim/m
 
 
 def lifecycle(action: str) -> int:
-    """Run the bundled installer (or fetch it) for install/upgrade/uninstall."""
-    installer = os.environ.get('OMO_INSTALLER')
-    path = Path(installer).expanduser() if installer else Path(os.path.realpath(__file__)).parent / 'install.sh'
+    """Run an installer for install/upgrade/uninstall.
+
+    Upgrades must use the latest published installer; running the pinned
+    installed copy would just reinstall the same version forever. Uninstall
+    prefers the bundled installer so it still works offline.
+    """
+    override = os.environ.get('OMO_INSTALLER')
+    local = Path(os.path.realpath(__file__)).parent / 'install.sh'
     temporary = None
-    if not path.is_file():
+    if override:
+        path = Path(override).expanduser()
+    elif action == 'uninstall' and local.is_file():
+        path = local
+    else:
         temporary = tempfile.TemporaryDirectory()
         path = Path(temporary.name) / 'install.sh'
         try:
@@ -36,7 +45,7 @@ def lifecycle(action: str) -> int:
                 path.write_bytes(response.read())
         except Exception as exc:
             temporary.cleanup()
-            raise RuntimeError(f'Cannot download the installer: {exc}') from exc
+            raise RuntimeError(f'Cannot download the latest installer: {exc}') from exc
     try:
         environment = dict(os.environ)
         environment['OMO_CLI_ACTION'] = action

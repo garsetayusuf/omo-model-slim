@@ -16,7 +16,7 @@ Review the script before piping it to a shell. The installer requires Python 3.1
 
 ## macOS (Intel and Apple Silicon)
 
-Run the command in Terminal or iTerm2. The installer detects Darwin, pins the `v1.0.4` release, verifies SHA-256 checksums, and installs to `~/.local/bin`.
+Run the command in Terminal or iTerm2. The installer detects Darwin, pins the `v1.0.5` release, verifies SHA-256 checksums, and installs to `~/.local/bin`.
 
 If `omo-model-slim` is not found afterwards, add the bin directory to your shell profile:
 

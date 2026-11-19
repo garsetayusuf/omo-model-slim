@@ -1,11 +1,15 @@
 """Tests for CLI lifecycle subcommands."""
 
+import importlib.machinery
+import importlib.util
+import io
 import os
 import subprocess
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 ENTRY = ROOT / 'omo-model-slim'
@@ -42,6 +46,19 @@ class LifecycleTests(unittest.TestCase):
         result = self.run_cli('uninstall')
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(self.record.read_text(), 'uninstall')
+
+    def test_upgrade_fetches_latest_installer_instead_of_pinned_copy(self):
+        loader = importlib.machinery.SourceFileLoader('omo_entry', str(ENTRY))
+        spec = importlib.util.spec_from_loader('omo_entry', loader)
+        module = importlib.util.module_from_spec(spec)
+        loader.exec_module(module)
+        result = subprocess.CompletedProcess(args=[], returncode=0)
+        with patch.dict(os.environ, {'OMO_INSTALLER': ''}), \
+             patch.object(module.urllib.request, 'urlopen', return_value=io.BytesIO(b'#!/bin/sh\nexit 0\n')) as urlopen, \
+             patch.object(module.subprocess, 'run', return_value=result):
+            code = module.lifecycle('upgrade')
+        self.assertEqual(code, 0)
+        self.assertEqual(urlopen.call_args.args[0], module.INSTALLER_URL)
 
     def test_help_advertises_lifecycle_commands(self):
         result = self.run_cli('--help')

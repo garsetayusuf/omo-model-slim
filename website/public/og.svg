@@ -13,7 +13,7 @@
   <g opacity="0.09" stroke="#8b7cf6">
     <path d="M0 120h1200M0 240h1200M0 360h1200M0 480h1200M200 0v630M400 0v630M600 0v630M800 0v630M1000 0v630"/>
   </g>
-  <text x="80" y="180" font-family="system-ui, sans-serif" font-size="26" fill="#a78bfa" font-weight="600">OMO MANAGER · v1.0.4</text>
+  <text x="80" y="180" font-family="system-ui, sans-serif" font-size="26" fill="#a78bfa" font-weight="600">OMO MANAGER · v1.0.5</text>
   <text x="80" y="300" font-family="system-ui, sans-serif" font-size="78" fill="#e8edf7" font-weight="800">Your models. Your agents.</text>
   <text x="80" y="390" font-family="system-ui, sans-serif" font-size="78" fill="url(#accent)" font-weight="800">One terminal.</text>
   <text x="80" y="470" font-family="system-ui, sans-serif" font-size="26" fill="#94a3b8">Manage OpenCode and Oh My OpenCode Slim configuration without editing JSON.</text>
