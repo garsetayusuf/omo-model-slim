@@ -37,6 +37,19 @@ ACTIONS = [
 ]
 MIN_HEIGHT, MIN_WIDTH = 7, 30
 
+# A menu draws a title, a count row, and a blank row above the options. All
+# three must be reserved or the highlighted option gets clipped at the bottom.
+def menu_capacity(height: int, header_lines: int) -> int:
+    return max(1, height - 5 - header_lines - 2)
+
+
+def preset_agent_target(preset_name: str, preset: dict, agent_name: str) -> str:
+    """Build the editable target path for either supported preset shape."""
+    base = f"presets/{preset_name}"
+    if isinstance(preset, dict) and isinstance(preset.get("agents"), dict):
+        base += "/agents"
+    return f"{base}/{agent_name}"
+
 
 def _clear() -> None:
     if sys.stdout.isatty() and not os.environ.get("OMO_NO_CLEAR"):
@@ -107,7 +120,7 @@ def run_tui() -> None:
                 selected = min(selected, max(0, len(filtered) - 1))
                 height = win.getmaxyx()[0]
                 header = title.splitlines()
-                capacity = max(1, height - 5 - len(header))
+                capacity = menu_capacity(height, len(header))
                 top = max(0, min(selected - capacity + 1, max(0, len(filtered) - capacity)))
                 lines = list(header) + [
                     f"{len(filtered)} items" + (f"  ·  filter: {query}" if query else ""),
@@ -335,7 +348,7 @@ def run_tui() -> None:
                 if chosen is None:
                     continue
                 pool = ordered_models()[0] + ordered_models()[1] + ordered_models()[2]
-                do_apply(pool[chosen], targets=[f"presets/{preset_name}/{agent_name}"])
+                do_apply(pool[chosen], targets=[preset_agent_target(preset_name, presets[preset_name], agent_name)])
 
         def browse() -> None:
             free, auth, other = ordered_models()

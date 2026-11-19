@@ -3,7 +3,7 @@
 A lightweight, dependency-free Python terminal app for managing [OpenCode](https://opencode.ai) and [Oh My OpenCode Slim](https://github.com/alvinunreal/oh-my-opencode-slim) configuration, plus a static documentation site with a browser-only terminal playground.
 
 - CLI executable: `omo-model-slim`
-- Version: **v1.0.5**
+- Version: **v1.0.6**
 - Lifecycle output: branded, color-aware step summaries for install/upgrade/uninstall/verify
 - Repository: https://github.com/garsetayusuf/omo-model-slim
 - Website: https://omo-manager.seri.my.id
@@ -31,19 +31,19 @@ A lightweight, dependency-free Python terminal app for managing [OpenCode](https
 curl -fsSL https://raw.githubusercontent.com/garsetayusuf/omo-model-slim/main/install.sh | bash
 ```
 
-No sudo. The installer downloads the pinned `v1.0.5` artifacts, verifies their SHA-256 checksums, validates Python syntax, and installs into your home directory.
+No sudo. The installer downloads the pinned `v1.0.6` artifacts, verifies their SHA-256 checksums, validates Python syntax, and installs into your home directory.
 
 Lifecycle commands print a compact, color-aware summary:
 
 ```text
-OMO Manager - v1.0.5
+OMO Manager - v1.0.6
 
   *  Install
   *  1/5  Platform detected             OK macOS
   *  2/5  Python 3.10+                  OK Python 3.15.2
   *  3/5  Download & checksums          OK 4 files verified
   *  4/5  Install application files     OK
-  *  5/5  Verify executable             OK omo-model-slim 1.0.5
+  *  5/5  Verify executable             OK omo-model-slim 1.0.6
 
   OK Install complete
     Command   omo-model-slim
@@ -62,6 +62,7 @@ echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc   # or ~/.bashrc
 ```sh
 omo-model-slim upgrade          # fetches the latest installer; aliases: update, install
                                 # reports "Already up to date" when unchanged
+                                # if installed CLI predates v1.0.5, run the curl command once first
 omo-model-slim uninstall        # removes the CLI, skips PATH cleanup while
                                 # ~/.local/bin still holds other executables;
                                 # otherwise surgically removes just the OMO
